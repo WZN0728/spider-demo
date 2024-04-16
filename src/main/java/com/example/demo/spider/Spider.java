@@ -57,7 +57,6 @@ public class Spider {
         Element script = doc.select("script").stream().filter(e -> e.data().contains("window.__DATA__")).findFirst().orElse(null);
         if (script != null) {
             String data = script.data().replaceAll("window.__DATA__ = ", "");
-            // 去掉末尾的分号
             System.out.println("Data extracted: " + data);
             // 使用Jackson解析JSON
             ObjectMapper mapper = new ObjectMapper();
@@ -110,18 +109,16 @@ public class Spider {
         url_con.setReadTimeout(60 * sec_cont);
         url_con.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)");
         InputStream htm_in = url_con.getInputStream();
-        String htm_str = InputStream2String(htm_in, charset);
-        saveHtml(filename, filepath, htm_str);
+//        String htm_str = InputStream2String(htm_in, charset);
+        saveHtml(filename, filepath, htm_in);
     }
 
     /**
-     * Method: saveHtml
-     * Description: save String to file
-     *
-     * @param filepath file path which need to be saved
-     * @param str      string saved
+     * @param filename
+     * @param filepath
+     * @param htm_in
      */
-    public static void saveHtml(String filename, String filepath, String str) {
+    public static void saveHtml(String filename, String filepath, InputStream htm_in) {
         try {
             if (countOccurrences(filename, "/")) {
                 filepath = filepath + filename.substring(0, filename.lastIndexOf("/"));
@@ -131,10 +128,15 @@ public class Spider {
             file.mkdirs();
             file = new File(filepath, filename);
             file.createNewFile();
-            OutputStreamWriter outs = new OutputStreamWriter(new FileOutputStream(filepath + filename, true), "utf-8");
-            outs.write(str);
+            //OutputStreamWriter outs = new OutputStreamWriter(new FileOutputStream(filepath + filename, true), "utf-8");
+            FileOutputStream outputStream = new FileOutputStream(filepath + filename);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = htm_in.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead); // 将读取的数据写入输出文件
+            }
             System.out.println(filepath + filename + "--------》已完成");
-            outs.close();
+            outputStream.close();
         } catch (IOException e) {
             System.out.println("Error at save html...");
             e.printStackTrace();
@@ -164,7 +166,7 @@ public class Spider {
         StringBuffer res = new StringBuffer();
         String line = "";
         while ((line = buff.readLine()) != null) {
-            res.append(line);
+            res.append(line + "\n");
         }
         return res.toString();
     }
